@@ -27,7 +27,10 @@ st.set_page_config(
     page_title="ATSA Reviewer",
     page_icon="📊",
     layout="centered",
-    initial_sidebar_state="auto",
+    # collapsed because nav now lives at the top of the page — sidebar would
+    # just take horizontal space on desktop without helping mobile (Streamlit
+    # auto-collapses sidebars below ~768px viewport, requiring an extra tap).
+    initial_sidebar_state="collapsed",
     menu_items={
         "About": (
             "ATSA Comp Exam · Part 1 (Closed-Book, 25%) · BSDS Edition\n\n"
@@ -37,22 +40,44 @@ st.set_page_config(
 )
 
 from reviewer.pages import PAGES  # noqa: E402 — must come after set_page_config
-from reviewer.theme import apply_theme  # noqa: E402
+from reviewer.theme import COL_ACCENT, COL_MUTED, COL_RULE, apply_theme  # noqa: E402
 
 apply_theme()
 
 
 # ----------------------------------------------------------------------------
-# Sidebar nav + dispatch
+# Top-of-page nav — always visible on every viewport, no sidebar required
 # ----------------------------------------------------------------------------
-with st.sidebar:
-    st.markdown("## ATSA Reviewer")
-    st.caption("Part 1 · Closed-Book · 25%")
-    st.markdown("---")
-    page_name = st.radio("Navigate", list(PAGES.keys()), label_visibility="collapsed")
-    st.markdown("---")
-    st.caption("📅 Exam: 02 May 2026, 12:30")
-    st.caption("🎯 Pass mark: ≥ 80%")
-    st.caption("⭐ = interactive simulation")
+st.markdown(
+    f"""
+<div style="margin-bottom:6px;">
+  <div style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:22px;
+              color:{COL_ACCENT};line-height:1.1;">ATSA Reviewer</div>
+  <div style="font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10.5px;
+              letter-spacing:0.18em;text-transform:uppercase;color:{COL_MUTED};">
+    Part 1 · Closed-Book · 25%  ·  Exam 02 May 2026, 12:30
+  </div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
+# Persist last-viewed page across reruns so reveal/shuffle/slider widgets don't
+# yank the user back to Home on every interaction.
+if "current_page" not in st.session_state:
+    st.session_state.current_page = next(iter(PAGES))
+
+page_name = st.selectbox(
+    "Section",
+    list(PAGES.keys()),
+    index=list(PAGES.keys()).index(st.session_state.current_page),
+    label_visibility="collapsed",
+    key="nav_select",
+)
+st.session_state.current_page = page_name
+st.markdown(
+    f"<hr style='margin:8px 0 18px;border:none;border-top:1px solid {COL_RULE};'>",
+    unsafe_allow_html=True,
+)
 
 PAGES[page_name]()
